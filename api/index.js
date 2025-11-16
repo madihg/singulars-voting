@@ -192,15 +192,10 @@ app.delete('/api/admin/themes/:id', requireAdmin, async (req, res) => {
 // Serve admin page
 app.get('/admin/:token', (req, res) => {
   if (req.params.token === ADMIN_TOKEN) {
-    res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
+    res.sendFile(path.join(__dirname, '..', 'admin.html'));
   } else {
     res.status(403).send('Unauthorized');
   }
-});
-
-// Root route - serve main page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Export for Vercel serverless function
