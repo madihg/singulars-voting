@@ -1,0 +1,71 @@
+================================================================================
+                         THEME VOTING SYSTEM
+                         STARTUP INSTRUCTIONS
+================================================================================
+
+IMPORTANT: You're getting "Failed to fetch" because the server isn't running yet!
+
+Follow these steps:
+
+STEP 1: Install Node.js (if you haven't already)
+        Visit: https://nodejs.org/
+        Download and install the LTS version
+
+STEP 2: Open Terminal/Command Prompt
+        Navigate to this folder:
+        cd /Users/halim/Documents/singulars-theme-voting
+
+STEP 3: Install Dependencies
+        Run this command:
+        npm install
+
+        (This only needs to be done once)
+
+STEP 4: Start the Server
+        Run this command:
+        npm start
+
+        You should see:
+        "🚀 Server is running on http://localhost:3000"
+
+STEP 5: Open Your Browser
+        Main voting page:
+        http://localhost:3000
+
+        Admin panel:
+        http://localhost:3000/admin/a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a5b4f
+
+================================================================================
+
+TROUBLESHOOTING:
+
+Q: "npm: command not found"
+A: You need to install Node.js (see STEP 1)
+
+Q: "Port 3000 already in use"
+A: Something else is using port 3000. Either:
+   - Close that program, or
+   - Use a different port: PORT=3001 npm start
+
+Q: Still getting "Failed to fetch"?
+A: Make sure the server is running in the terminal!
+   Look for "Server is running on http://localhost:3000"
+
+================================================================================
+
+DATABASE SETUP:
+The SQLite database (themes.db) is created automatically when you first
+start the server. No manual setup needed!
+
+It's a simple file-based database that stores all themes and votes.
+
+================================================================================
+
+KEEPING IT RUNNING:
+The server only runs while the terminal window is open.
+To stop it: Press Ctrl+C in the terminal
+
+For production deployment, see README.md
+
+================================================================================
+

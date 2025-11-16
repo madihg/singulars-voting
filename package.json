@@ -1,0 +1,24 @@
+{
+  "name": "singulars-theme-voting",
+  "version": "1.0.0",
+  "description": "A beautiful theme voting system with admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["voting", "themes", "express"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^9.2.2",
+    "uuid": "^9.0.1",
+    "@libsql/client": "^0.5.0",
+    "@vercel/kv": "^1.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+

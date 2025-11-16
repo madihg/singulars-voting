@@ -1,0 +1,82 @@
+const path = require('path');
+
+// Check environment: Vercel KV > Turso > Local SQLite
+const useVercelKV = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
+const useTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
+
+let db;
+
+if (useVercelKV) {
+  // Use Vercel KV (simplest for Vercel deployment)
+  db = require('./database-vercel-kv');
+  console.log('✓ Using Vercel KV (serverless key-value store)');
+  
+} else if (useTurso) {
+  // Use Turso for serverless deployment (Vercel)
+  const { createClient } = require('@libsql/client');
+  
+  const turso = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+  
+  // Initialize table
+  (async () => {
+    try {
+      await turso.execute(`
+        CREATE TABLE IF NOT EXISTS themes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          content TEXT NOT NULL UNIQUE,
+          votes INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('✓ Using Turso database (serverless)');
+    } catch (error) {
+      console.error('Turso initialization error:', error);
+    }
+  })();
+  
+  // Wrap Turso client to match better-sqlite3 API
+  db = {
+    prepare: (sql) => ({
+      all: async (...params) => {
+        const result = await turso.execute({ sql, args: params });
+        return result.rows;
+      },
+      get: async (...params) => {
+        const result = await turso.execute({ sql, args: params });
+        return result.rows[0];
+      },
+      run: async (...params) => {
+        const result = await turso.execute({ sql, args: params });
+        return { 
+          changes: result.rowsAffected,
+          lastInsertRowid: result.lastInsertRowid 
+        };
+      }
+    })
+  };
+  
+} else {
+  // Use local SQLite for development
+  const Database = require('better-sqlite3');
+  db = new Database(path.join(__dirname, 'themes.db'));
+  
+  // Create themes table if it doesn't exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS themes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      content TEXT NOT NULL UNIQUE,
+      votes INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  
+  console.log('✓ Using local SQLite database');
+}
+
+module.exports = db;
+
