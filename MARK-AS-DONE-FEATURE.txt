@@ -1,0 +1,101 @@
+================================================================================
+                    "MARK AS DONE" FEATURE - DOCUMENTATION
+================================================================================
+
+A new feature has been added that allows you to mark themes as completed in
+the admin panel. Completed themes appear greyed out with strikethrough on
+both the admin panel and the main voting page.
+
+================================================================================
+HOW TO USE (ADMIN PANEL)
+================================================================================
+
+1. Go to your admin panel:
+   http://localhost:3000/admin/a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a5b4f
+   (or your Vercel deployment URL)
+
+2. Find the theme you want to mark as done
+
+3. Check the "Done" checkbox next to the theme
+
+4. The theme will immediately:
+   - Show strikethrough text
+   - Display [DONE] badge
+   - Appear greyed out (50% opacity)
+   - Disable voting on the main site
+
+5. To mark it as incomplete again:
+   - Simply uncheck the "Done" checkbox
+
+================================================================================
+HOW IT APPEARS ON MAIN WEBSITE
+================================================================================
+
+When a theme is marked as done:
+
+✓ Theme text appears with strikethrough
+✓ "[DONE]" badge is shown in Courier New font
+✓ Entire theme card is greyed out (50% opacity)
+✓ Upvote button is disabled (can't vote on completed themes)
+✓ Theme still visible but clearly marked as resolved
+
+Example:
+┌─────────────────────────────────────────────────────┐
+│ Dark Mode Support [DONE]              ▲             │
+│ 2h ago                                 45            │
+│ (with strikethrough and greyed out)                 │
+└─────────────────────────────────────────────────────┘
+
+================================================================================
+TECHNICAL DETAILS
+================================================================================
+
+Database Changes:
+- Added "completed" field (INTEGER, 0 or 1) to themes table
+- 0 = not completed (default)
+- 1 = completed/done
+
+API Endpoint Added:
+- PATCH /api/admin/themes/:id/toggle-complete
+- Requires admin authentication
+- Toggles completed status between 0 and 1
+
+Frontend Changes:
+- Admin panel: Added checkbox to toggle completed status
+- Main page: Shows completed themes with special styling
+- Both pages: Display [DONE] badge for completed themes
+
+CSS Styling:
+- .theme-card.completed - 50% opacity
+- .theme-text with strikethrough when completed
+- .done-badge for the [DONE] label
+
+================================================================================
+BENEFITS
+================================================================================
+
+1. Visual feedback that a theme has been implemented
+2. Keeps theme in the list for reference
+3. Prevents people from continuing to vote on completed items
+4. Clear communication to users about what's been done
+5. Maintains voting history (votes are preserved)
+
+================================================================================
+DEPLOYING TO VERCEL
+================================================================================
+
+The changes have been pushed to GitHub. To deploy:
+
+1. Go to your Vercel dashboard
+2. Your project should auto-deploy from the latest commit
+3. Or manually redeploy from the Deployments tab
+
+If you're using SQLite locally:
+- Delete your themes.db file to recreate with the new schema
+- Or it will auto-add the "completed" column on next run
+
+If you're using Vercel KV:
+- No action needed! It will automatically work with the new field
+
+================================================================================
+
