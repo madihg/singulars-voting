@@ -7,7 +7,7 @@
   },
   "rewrites": [
     {
-      "source": "/admin/:token",
+      "source": "/(.*)",
       "destination": "/api"
     }
   ]

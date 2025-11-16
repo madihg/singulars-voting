@@ -11,7 +11,7 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a
 
 // Middleware
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // API Routes
 
@@ -192,10 +192,15 @@ app.delete('/api/admin/themes/:id', requireAdmin, async (req, res) => {
 // Serve admin page
 app.get('/admin/:token', (req, res) => {
   if (req.params.token === ADMIN_TOKEN) {
-    res.sendFile(path.join(__dirname, '..', 'admin.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
   } else {
     res.status(403).send('Unauthorized');
   }
+});
+
+// Serve main page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Export for Vercel serverless function
