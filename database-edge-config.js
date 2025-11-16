@@ -17,7 +17,12 @@ async function getThemesData() {
   
   try {
     const data = await get('themes');
-    themesCache = data || { themes: [], nextId: 1 };
+    // If data is an array (old format), convert to new format
+    if (Array.isArray(data)) {
+      themesCache = { themes: data, nextId: data.length > 0 ? Math.max(...data.map(t => t.id)) + 1 : 1 };
+    } else {
+      themesCache = data || { themes: [], nextId: 1 };
+    }
     cacheTime = Date.now();
     return themesCache;
   } catch (error) {
@@ -76,29 +81,30 @@ async function updateThemesData(newData) {
 
 // Adapter to match our existing database API
 const edgeConfigDb = {
-  prepare: (sql) => ({
-    all: async (...params) => {
-      const data = await getThemesData();
+  prepare: (sql) => {
+    return {
+      all: async (...params) => {
+        const data = await getThemesData();
+        
+        if (sql.includes('SELECT') && sql.includes('ORDER BY votes')) {
+          // Return all themes sorted by votes
+          return data.themes.sort((a, b) => b.votes - a.votes || new Date(a.created_at) - new Date(b.created_at));
+        }
+        
+        return data.themes;
+      },
       
-      if (sql.includes('SELECT') && sql.includes('ORDER BY votes')) {
-        // Return all themes sorted by votes
-        return data.themes.sort((a, b) => b.votes - a.votes || new Date(a.created_at) - new Date(b.created_at));
-      }
+      get: async (...params) => {
+        const data = await getThemesData();
+        const id = params[0];
+        
+        if (!id) return null;
+        
+        return data.themes.find(t => t.id === parseInt(id)) || null;
+      },
       
-      return data.themes;
-    },
-    
-    get: async (...params) => {
-      const data = await getThemesData();
-      const id = params[0];
-      
-      if (!id) return null;
-      
-      return data.themes.find(t => t.id === parseInt(id)) || null;
-    },
-    
-    run: async (...params) => {
-      const data = await getThemesData();
+      run: async (...params) => {
+        const data = await getThemesData();
       
       // INSERT new theme
       if (sql.includes('INSERT INTO themes')) {
@@ -208,9 +214,10 @@ const edgeConfigDb = {
         return { changes: 1 };
       }
       
-      return { changes: 0 };
-    }
-  })
+        return { changes: 0 };
+      }
+    };
+  }
 };
 
 module.exports = edgeConfigDb;
