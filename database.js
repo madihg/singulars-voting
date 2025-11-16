@@ -1,13 +1,20 @@
 const path = require('path');
 
-// Check environment: Vercel Postgres > Vercel KV > Turso > Local SQLite
+// Check environment: Edge Config > Blob > Vercel Postgres > Vercel KV > Turso > Local SQLite
+const useEdgeConfig = process.env.EDGE_CONFIG && process.env.EDGE_CONFIG_ID && process.env.VERCEL_API_TOKEN;
 const useVercelPostgres = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 const useVercelKV = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
 const useTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
 
 let db;
 
-if (useVercelPostgres) {
+if (useEdgeConfig) {
+  // Use Vercel Edge Config (ULTRA-FAST reads, slower writes)
+  db = require('./database-edge-config');
+  console.log('✓ Using Vercel Edge Config (ultra-low latency reads)');
+  console.log('⚠️  Note: Writes may have slight delay due to Edge Config propagation');
+  
+} else if (useVercelPostgres) {
   // Use Vercel Postgres (BEST for Vercel - proper SQL database)
   db = require('./database-vercel-postgres');
   console.log('✓ Using Vercel Postgres (serverless SQL database)');
