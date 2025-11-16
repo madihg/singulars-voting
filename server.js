@@ -20,7 +20,7 @@ app.use(express.static('public'));
 app.get('/api/themes', async (req, res) => {
   try {
     const themes = await db.prepare(`
-      SELECT id, content, votes, created_at, updated_at 
+      SELECT id, content, votes, completed, created_at, updated_at 
       FROM themes 
       ORDER BY votes DESC, created_at ASC
     `).all();
@@ -140,6 +140,35 @@ app.put('/api/admin/themes/:id', requireAdmin, async (req, res) => {
     } else {
       res.status(500).json({ error: 'Failed to update theme' });
     }
+  }
+});
+
+// Admin: Toggle theme completed status
+app.patch('/api/admin/themes/:id/toggle-complete', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get current theme
+    const currentTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
+    
+    if (!currentTheme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+    
+    // Toggle completed status (0 -> 1, 1 -> 0)
+    const newCompleted = currentTheme.completed ? 0 : 1;
+    
+    const stmt = db.prepare(`
+      UPDATE themes 
+      SET completed = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `);
+    await stmt.run(newCompleted, id);
+    
+    const updatedTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
+    res.json(updatedTheme);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle theme completion' });
   }
 });
 

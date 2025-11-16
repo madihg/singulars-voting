@@ -28,6 +28,7 @@ if (useVercelKV) {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           content TEXT NOT NULL UNIQUE,
           votes INTEGER DEFAULT 0,
+          completed INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -70,6 +71,7 @@ if (useVercelKV) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       content TEXT NOT NULL UNIQUE,
       votes INTEGER DEFAULT 0,
+      completed INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )

@@ -67,7 +67,7 @@ function renderThemes() {
     }
     
     adminThemesList.innerHTML = themes.map(theme => `
-        <div class="theme-card" data-id="${theme.id}">
+        <div class="theme-card ${theme.completed ? 'completed' : ''}" data-id="${theme.id}">
             ${editingId === theme.id ? `
                 <div class="edit-form">
                     <input 
@@ -82,7 +82,7 @@ function renderThemes() {
                 </div>
             ` : `
                 <div class="theme-content">
-                    <div class="theme-text">${escapeHtml(theme.content)}</div>
+                    <div class="theme-text">${escapeHtml(theme.content)}${theme.completed ? ' <span class="done-badge">[DONE]</span>' : ''}</div>
                     <div class="theme-meta">
                         <span class="theme-date">${formatDate(theme.created_at)}</span>
                     </div>
@@ -92,6 +92,14 @@ function renderThemes() {
                     <span class="vote-count">${theme.votes}</span>
                 </div>
                 <div class="admin-actions">
+                    <label class="checkbox-container" title="${theme.completed ? 'Mark as incomplete' : 'Mark as done'}">
+                        <input 
+                            type="checkbox" 
+                            ${theme.completed ? 'checked' : ''} 
+                            onchange="toggleComplete(${theme.id})"
+                        >
+                        <span class="checkbox-label">Done</span>
+                    </label>
                     <button class="admin-btn edit" onclick="startEdit(${theme.id})">Edit</button>
                     <button class="admin-btn delete" onclick="deleteTheme(${theme.id})">Delete</button>
                 </div>
@@ -207,6 +215,38 @@ async function saveEdit(id) {
         
     } catch (error) {
         showMessage(error.message, 'error');
+    }
+}
+
+// Toggle theme completed status
+async function toggleComplete(id) {
+    try {
+        const response = await fetch(`/api/admin/themes/${id}/toggle-complete`, {
+            method: 'PATCH',
+            headers: {
+                'X-Admin-Token': adminToken,
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to toggle completion');
+        }
+        
+        // Update local state
+        const index = themes.findIndex(t => t.id === id);
+        if (index !== -1) {
+            themes[index] = data;
+        }
+        
+        renderThemes();
+        showMessage(data.completed ? 'Theme marked as done! ✓' : 'Theme marked as incomplete', 'success');
+        
+    } catch (error) {
+        showMessage(error.message, 'error');
+        // Revert checkbox on error
+        renderThemes();
     }
 }
 

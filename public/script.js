@@ -57,9 +57,9 @@ function renderThemes() {
     }
     
     themesList.innerHTML = themes.map(theme => `
-        <div class="theme-card" data-id="${theme.id}">
+        <div class="theme-card ${theme.completed ? 'completed' : ''}" data-id="${theme.id}">
             <div class="theme-content">
-                <div class="theme-text">${escapeHtml(theme.content)}</div>
+                <div class="theme-text">${escapeHtml(theme.content)}${theme.completed ? ' <span class="done-badge">[DONE]</span>' : ''}</div>
                 <div class="theme-meta">
                     <span class="theme-date">${formatDate(theme.created_at)}</span>
                 </div>
@@ -68,6 +68,7 @@ function renderThemes() {
                 class="vote-btn" 
                 onclick="handleVote(${theme.id})"
                 aria-label="Upvote"
+                ${theme.completed ? 'disabled' : ''}
             >
                 <span class="vote-icon">▲</span>
                 <span class="vote-count">${theme.votes}</span>
