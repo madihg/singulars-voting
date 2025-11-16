@@ -1,0 +1,131 @@
+================================================================================
+                    VERCEL 500 ERROR - TROUBLESHOOTING GUIDE
+================================================================================
+
+ERROR: "This Serverless Function has crashed"
+CODE: FUNCTION_INVOCATION_FAILED
+
+This means the Node.js function crashed on Vercel. Here's how to fix it:
+
+================================================================================
+STEP 1: CHECK VERCEL LOGS (MOST IMPORTANT)
+================================================================================
+
+1. Go to your Vercel Dashboard:
+   https://vercel.com/dashboard
+
+2. Click on your "singulars-voting" project
+
+3. Go to the "Deployments" tab
+
+4. Click on the latest deployment
+
+5. Click "View Function Logs" or "Runtime Logs"
+
+6. Look for the actual error message (it will show you exactly what failed)
+
+Common errors you'll see:
+- "Cannot find module '@vercel/kv'" → Missing KV setup
+- "better-sqlite3" error → Trying to use SQLite on Vercel (won't work)
+- "KV_REST_API_URL is not defined" → Missing environment variables
+
+================================================================================
+STEP 2: VERIFY VERCEL KV IS SET UP
+================================================================================
+
+1. In Vercel Dashboard → Your Project → "Storage" tab
+
+2. Do you see a KV database listed?
+
+   NO? → You need to create it:
+   - Click "Create Database"
+   - Select "KV"
+   - Name it "singulars-voting-kv"
+   - Click "Create"
+   - Vercel will auto-add environment variables
+
+   YES? → Continue to Step 3
+
+================================================================================
+STEP 3: CHECK ENVIRONMENT VARIABLES
+================================================================================
+
+1. Go to Settings → Environment Variables
+
+2. Verify these exist:
+   ✓ KV_REST_API_URL
+   ✓ KV_REST_API_TOKEN
+   ✓ KV_URL
+   ✓ ADMIN_TOKEN
+
+3. If any are missing:
+   - For KV variables: Re-link your KV database
+   - For ADMIN_TOKEN: Add it manually:
+     Name: ADMIN_TOKEN
+     Value: a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a5b4f
+
+4. After adding/fixing variables, you MUST redeploy:
+   Deployments → Click three dots → Redeploy
+
+================================================================================
+STEP 4: COMMON FIX - PACKAGE.JSON ISSUE
+================================================================================
+
+Vercel might not be installing the right packages. Let me create a fixed
+version that's more explicit about dependencies.
+
+The issue is likely that better-sqlite3 is trying to install on Vercel
+(which won't work because it needs native bindings).
+
+================================================================================
+STEP 5: IF VERCEL KV ISN'T WORKING - USE TURSO INSTEAD
+================================================================================
+
+Turso is easier and more reliable than Vercel KV for this use case:
+
+1. Sign up at https://turso.tech (free)
+
+2. Install Turso CLI:
+   brew install tursodatabase/tap/turso
+   (or see https://docs.turso.tech/cli/installation)
+
+3. Login:
+   turso auth login
+
+4. Create database:
+   turso db create singulars-voting
+
+5. Get your database URL:
+   turso db show singulars-voting
+   (copy the URL that looks like: libsql://your-db.turso.io)
+
+6. Create auth token:
+   turso db tokens create singulars-voting
+   (copy the token)
+
+7. In Vercel, add these environment variables:
+   TURSO_DATABASE_URL = your database URL
+   TURSO_AUTH_TOKEN = your token
+   ADMIN_TOKEN = a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a5b4f
+
+8. Redeploy on Vercel
+
+Your code already supports Turso! It will automatically use it.
+
+================================================================================
+STEP 6: QUICK FIX - TRY THIS FIRST
+================================================================================
+
+The most likely issue is better-sqlite3 trying to build on Vercel.
+
+I'll create a fixed package.json that marks better-sqlite3 as optional.
+
+Run these commands:
+
+cd /Users/halim/Documents/singulars-theme-voting
+git pull origin main
+(I'll push a fix)
+(Vercel will auto-deploy)
+
+================================================================================
+

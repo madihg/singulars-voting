@@ -1,0 +1,9 @@
+# Don't upload these files to Vercel
+node_modules/
+themes.db
+themes.db-journal
+.env
+.env.local
+*.log
+.DS_Store
+

@@ -62,22 +62,30 @@ if (useVercelKV) {
   
 } else {
   // Use local SQLite for development
-  const Database = require('better-sqlite3');
-  db = new Database(path.join(__dirname, 'themes.db'));
-  
-  // Create themes table if it doesn't exist
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS themes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      content TEXT NOT NULL UNIQUE,
-      votes INTEGER DEFAULT 0,
-      completed INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  
-  console.log('✓ Using local SQLite database');
+  try {
+    const Database = require('better-sqlite3');
+    db = new Database(path.join(__dirname, 'themes.db'));
+    
+    // Create themes table if it doesn't exist
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS themes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        content TEXT NOT NULL UNIQUE,
+        votes INTEGER DEFAULT 0,
+        completed INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    console.log('✓ Using local SQLite database');
+  } catch (error) {
+    console.error('❌ CRITICAL: No database configured!');
+    console.error('For local development: Install Node.js and run "npm install"');
+    console.error('For Vercel deployment: Set up Vercel KV or Turso database');
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
 }
 
 module.exports = db;
