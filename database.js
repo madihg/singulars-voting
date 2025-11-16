@@ -1,13 +1,19 @@
 const path = require('path');
 
-// Check environment: Vercel KV > Turso > Local SQLite
+// Check environment: Vercel Postgres > Vercel KV > Turso > Local SQLite
+const useVercelPostgres = process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 const useVercelKV = process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
 const useTurso = process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN;
 
 let db;
 
-if (useVercelKV) {
-  // Use Vercel KV (simplest for Vercel deployment)
+if (useVercelPostgres) {
+  // Use Vercel Postgres (BEST for Vercel - proper SQL database)
+  db = require('./database-vercel-postgres');
+  console.log('✓ Using Vercel Postgres (serverless SQL database)');
+  
+} else if (useVercelKV) {
+  // Use Vercel KV (alternative option)
   db = require('./database-vercel-kv');
   console.log('✓ Using Vercel KV (serverless key-value store)');
   
