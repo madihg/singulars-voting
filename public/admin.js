@@ -1,6 +1,12 @@
 // Get admin token from URL
 const urlPath = window.location.pathname;
-const adminToken = urlPath.split('/').pop();
+let adminToken = urlPath.split('/').pop();
+
+// If accessing via admin.html, extract token from query param or use default
+if (adminToken === 'admin.html' || !adminToken || adminToken === 'admin') {
+    const urlParams = new URLSearchParams(window.location.search);
+    adminToken = urlParams.get('token') || 'a7f3e9b2-4d8c-4a1e-9f6b-3c7d2e8a5b4f';
+}
 
 // State management
 let themes = [];
@@ -59,7 +65,6 @@ function renderThemes() {
     if (themes.length === 0) {
         adminThemesList.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">📋</div>
                 <p>No themes yet.</p>
             </div>
         `;
@@ -151,7 +156,7 @@ async function handleAdminSubmit(e) {
         
         adminThemeInput.value = '';
         updateCharCount();
-        showMessage('Theme added successfully! 🎉', 'success');
+        showMessage('Theme added successfully!', 'success');
         
     } catch (error) {
         showMessage(error.message, 'error');
@@ -211,7 +216,7 @@ async function saveEdit(id) {
         
         editingId = null;
         renderThemes();
-        showMessage('Theme updated successfully! ✅', 'success');
+        showMessage('Theme updated successfully!', 'success');
         
     } catch (error) {
         showMessage(error.message, 'error');
@@ -241,7 +246,7 @@ async function toggleComplete(id) {
         }
         
         renderThemes();
-        showMessage(data.completed ? 'Theme marked as done! ✓' : 'Theme marked as incomplete', 'success');
+        showMessage(data.completed ? 'Theme marked as done!' : 'Theme marked as incomplete', 'success');
         
     } catch (error) {
         showMessage(error.message, 'error');
@@ -273,7 +278,7 @@ async function deleteTheme(id) {
         themes = themes.filter(t => t.id !== id);
         renderThemes();
         updateStats();
-        showMessage('Theme deleted successfully! 🗑️', 'success');
+        showMessage('Theme deleted successfully!', 'success');
         
     } catch (error) {
         showMessage(error.message, 'error');
