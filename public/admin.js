@@ -11,6 +11,7 @@ if (adminToken === 'admin.html' || !adminToken || adminToken === 'admin') {
 // State management
 let themes = [];
 let editingId = null;
+let hideCompleted = false;
 
 // DOM elements
 const adminThemeForm = document.getElementById('adminThemeForm');
@@ -20,6 +21,7 @@ const adminCharCount = document.getElementById('adminCharCount');
 const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
+const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     adminThemeForm.addEventListener('submit', handleAdminSubmit);
     adminThemeInput.addEventListener('input', updateCharCount);
+    toggleCompletedBtn.addEventListener('click', toggleCompletedVisibility);
 }
 
 // Update character count
@@ -60,18 +63,28 @@ function updateStats() {
     totalVotesEl.textContent = themes.reduce((sum, theme) => sum + theme.votes, 0);
 }
 
+// Toggle completed themes visibility
+function toggleCompletedVisibility() {
+    hideCompleted = !hideCompleted;
+    toggleCompletedBtn.textContent = hideCompleted ? 'Show Completed' : 'Hide Completed';
+    renderThemes();
+}
+
 // Render themes
 function renderThemes() {
-    if (themes.length === 0) {
+    // Filter themes based on hideCompleted state
+    const displayThemes = hideCompleted ? themes.filter(t => !t.completed) : themes;
+    
+    if (displayThemes.length === 0) {
         adminThemesList.innerHTML = `
             <div class="empty-state">
-                <p>No themes yet.</p>
+                <p>${hideCompleted ? 'No incomplete themes.' : 'No themes yet.'}</p>
             </div>
         `;
         return;
     }
     
-    adminThemesList.innerHTML = themes.map(theme => `
+    adminThemesList.innerHTML = displayThemes.map(theme => `
         <div class="theme-card ${theme.completed ? 'completed' : ''}" data-id="${theme.id}">
             ${editingId === theme.id ? `
                 <div class="edit-form">
