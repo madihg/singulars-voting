@@ -11,19 +11,19 @@ if (adminToken === 'admin.html' || !adminToken || adminToken === 'admin') {
 // State management
 let themes = [];
 let editingId = null;
-let hideCompleted = false;
 
 // DOM elements
 const adminThemeForm = document.getElementById('adminThemeForm');
 const adminThemeInput = document.getElementById('adminThemeInput');
-const adminThemesList = document.getElementById('adminThemesList');
+const activeThemesList = document.getElementById('activeThemesList');
+const completedThemesList = document.getElementById('completedThemesList');
+const archivedThemesList = document.getElementById('archivedThemesList');
 const adminCharCount = document.getElementById('adminCharCount');
 const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
-const filterCompletedCheckbox = document.getElementById('filterCompletedCheckbox');
-const hiddenSection = document.getElementById('hiddenSection');
-const hiddenThemesList = document.getElementById('hiddenThemesList');
+const completedSection = document.getElementById('completedSection');
+const archivedSection = document.getElementById('archivedSection');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,19 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     adminThemeForm.addEventListener('submit', handleAdminSubmit);
     adminThemeInput.addEventListener('input', updateCharCount);
-    filterCompletedCheckbox.addEventListener('change', handleFilterChange);
-    
-    // Add event delegation for hide/show buttons as backup
-    document.addEventListener('click', (e) => {
-        const hideBtn = e.target.closest('.admin-btn.hide, .admin-btn.show');
-        if (hideBtn && hideBtn.dataset.themeId) {
-            e.preventDefault();
-            e.stopPropagation();
-            const themeId = parseInt(hideBtn.dataset.themeId);
-            console.log('Hide button clicked via event delegation, theme ID:', themeId);
-            toggleHidden(themeId);
-        }
-    });
 }
 
 // Update character count
@@ -84,43 +71,38 @@ function updateStats() {
     totalVotesEl.textContent = themes.reduce((sum, theme) => sum + theme.votes, 0);
 }
 
-// Handle filter change
-function handleFilterChange() {
-    hideCompleted = filterCompletedCheckbox.checked;
-    console.log('Filter completed checkbox changed:', hideCompleted);
-    renderThemes();
-}
-
 // Render themes
 function renderThemes() {
-    console.log('Rendering themes. Total themes:', themes.length);
+    // Separate themes into three categories
+    const activeThemes = themes.filter(t => !t.archived && !t.completed);
+    const completedThemes = themes.filter(t => !t.archived && t.completed);
+    const archivedThemes = themes.filter(t => t.archived);
     
-    // Separate themes into visible and hidden (check for both 0 and falsy values)
-    const visibleThemes = themes.filter(t => !t.hidden || t.hidden === 0);
-    const hiddenThemes = themes.filter(t => t.hidden && t.hidden !== 0);
-    
-    console.log('Visible themes:', visibleThemes.length, 'Hidden themes:', hiddenThemes.length);
-    
-    // Further filter visible themes based on hideCompleted state
-    const displayThemes = hideCompleted ? visibleThemes.filter(t => !t.completed) : visibleThemes;
-    
-    // Render visible themes
-    if (displayThemes.length === 0) {
-        adminThemesList.innerHTML = `
+    // Render active themes
+    if (activeThemes.length === 0) {
+        activeThemesList.innerHTML = `
             <div class="empty-state">
-                <p>${hideCompleted ? 'No incomplete themes.' : 'No visible themes yet.'}</p>
+                <p>No active themes yet.</p>
             </div>
         `;
     } else {
-        adminThemesList.innerHTML = displayThemes.map(theme => renderThemeCard(theme)).join('');
+        activeThemesList.innerHTML = activeThemes.map(theme => renderThemeCard(theme)).join('');
     }
     
-    // Render hidden themes section
-    if (hiddenThemes.length === 0) {
-        hiddenSection.style.display = 'none';
+    // Render completed themes section
+    if (completedThemes.length === 0) {
+        completedSection.style.display = 'none';
     } else {
-        hiddenSection.style.display = 'block';
-        hiddenThemesList.innerHTML = hiddenThemes.map(theme => renderThemeCard(theme)).join('');
+        completedSection.style.display = 'block';
+        completedThemesList.innerHTML = completedThemes.map(theme => renderThemeCard(theme)).join('');
+    }
+    
+    // Render archived themes section
+    if (archivedThemes.length === 0) {
+        archivedSection.style.display = 'none';
+    } else {
+        archivedSection.style.display = 'block';
+        archivedThemesList.innerHTML = archivedThemes.map(theme => renderThemeCard(theme)).join('');
     }
 }
 
@@ -160,8 +142,8 @@ function renderThemeCard(theme) {
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
-                    <button class="admin-btn ${theme.hidden ? 'show' : 'hide'}" onclick="window.toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}" data-theme-id="${theme.id}" data-is-hidden="${theme.hidden ? '1' : '0'}">
-                        ${theme.hidden ? 'Show' : 'Hide'}
+                    <button class="admin-btn ${theme.archived ? 'show' : 'archive'}" onclick="window.toggleArchived(${theme.id})" title="${theme.archived ? 'Unarchive theme' : 'Archive theme'}" data-theme-id="${theme.id}">
+                        ${theme.archived ? 'Unarchive' : 'Archive'}
                     </button>
                     <button class="admin-btn edit" onclick="window.startEdit(${theme.id})">Edit</button>
                     <button class="admin-btn delete" onclick="window.deleteTheme(${theme.id})">Delete</button>
@@ -281,77 +263,47 @@ async function saveEdit(id) {
     }
 }
 
-// Toggle theme hidden status
-async function toggleHidden(id) {
+// Toggle theme archived status
+async function toggleArchived(id) {
     try {
-        console.log('=== TOGGLE HIDDEN CALLED ===');
-        console.log('Theme ID:', id, 'Type:', typeof id);
-        console.log('Admin token:', adminToken);
-        
-        // Find the theme before toggle
-        const themeBefore = themes.find(t => t.id === id);
-        console.log('Theme before toggle:', themeBefore);
-        console.log('Current hidden value:', themeBefore?.hidden, 'Type:', typeof themeBefore?.hidden);
-        
-        const response = await fetch(`/api/admin/themes/${id}/toggle-hidden`, {
+        const response = await fetch(`/api/admin/themes/${id}/toggle-archived`, {
             method: 'PATCH',
             headers: {
                 'X-Admin-Token': adminToken,
-                'Content-Type': 'application/json',
             },
         });
         
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-            console.error('API Error:', errorData);
-            throw new Error(errorData.error || 'Failed to toggle visibility');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to toggle archive status');
         }
         
         const data = await response.json();
-        console.log('Response data:', data);
-        console.log('Response hidden value:', data.hidden, 'Type:', typeof data.hidden);
         
-        // Normalize hidden value (handle null, undefined, string "0"/"1", etc.)
-        const normalizedHidden = data.hidden === null || data.hidden === undefined ? 0 : (parseInt(data.hidden) || 0);
-        data.hidden = normalizedHidden;
-        
-        console.log('Normalized hidden value:', normalizedHidden, 'Type:', typeof normalizedHidden);
+        // Normalize archived value
+        const normalizedArchived = data.archived === null || data.archived === undefined ? 0 : (parseInt(data.archived) || 0);
+        data.archived = normalizedArchived;
         
         // Update local state
         const index = themes.findIndex(t => t.id === id);
-        console.log('Theme index in array:', index);
-        
         if (index !== -1) {
-            const oldHidden = themes[index].hidden;
-            themes[index] = { ...themes[index], ...data, hidden: normalizedHidden };
-            console.log('Theme updated from hidden=' + oldHidden + ' to hidden=' + themes[index].hidden);
-        } else {
-            console.error('Theme not found in local state!');
+            themes[index] = { ...themes[index], ...data, archived: normalizedArchived };
         }
         
-        // Force re-render
         renderThemes();
         updateStats();
         
-        // Show correct message based on normalized value
-        const isHidden = normalizedHidden === 1;
-        console.log('Is hidden?', isHidden, 'Value:', normalizedHidden);
-        showMessage(isHidden ? 'Theme hidden from users' : 'Theme visible to users', 'success');
+        const isArchived = normalizedArchived === 1;
+        showMessage(isArchived ? 'Theme archived' : 'Theme unarchived', 'success');
         
     } catch (error) {
-        console.error('Toggle hidden error:', error);
-        console.error('Error stack:', error.stack);
-        showMessage(error.message || 'Failed to toggle visibility', 'error');
-        // Revert on error
+        showMessage(error.message || 'Failed to toggle archive status', 'error');
         renderThemes();
     }
 }
 
 // Make functions available globally for inline onclick handlers
-window.toggleHidden = toggleHidden;
+window.toggleArchived = toggleArchived;
 window.toggleComplete = toggleComplete;
 window.startEdit = startEdit;
 window.cancelEdit = cancelEdit;

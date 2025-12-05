@@ -20,14 +20,14 @@ app.get('/api/themes', async (req, res) => {
   try {
     const isAdmin = req.headers['x-admin-token'] === ADMIN_TOKEN;
     
-    // For regular users, exclude hidden themes
+    // For regular users, exclude archived themes
     const query = isAdmin 
-      ? `SELECT id, content, votes, completed, hidden, created_at, updated_at 
+      ? `SELECT id, content, votes, completed, archived, created_at, updated_at 
          FROM themes 
          ORDER BY votes DESC, created_at ASC`
-      : `SELECT id, content, votes, completed, hidden, created_at, updated_at 
+      : `SELECT id, content, votes, completed, archived, created_at, updated_at 
          FROM themes 
-         WHERE hidden = 0 OR hidden IS NULL
+         WHERE archived = 0 OR archived IS NULL
          ORDER BY votes DESC, created_at ASC`;
     
     const themes = await db.prepare(query).all();
@@ -179,8 +179,8 @@ app.patch('/api/admin/themes/:id/toggle-complete', requireAdmin, async (req, res
   }
 });
 
-// Admin: Toggle theme hidden status
-app.patch('/api/admin/themes/:id/toggle-hidden', requireAdmin, async (req, res) => {
+// Admin: Toggle theme archived status
+app.patch('/api/admin/themes/:id/toggle-archived', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -191,35 +191,29 @@ app.patch('/api/admin/themes/:id/toggle-hidden', requireAdmin, async (req, res) 
       return res.status(404).json({ error: 'Theme not found' });
     }
     
-    // Handle null/undefined/0 as visible (0), anything else as hidden (1)
-    const currentHidden = currentTheme.hidden === null || currentTheme.hidden === undefined || currentTheme.hidden === 0 ? 0 : 1;
+    // Handle null/undefined/0 as not archived (0), anything else as archived (1)
+    const currentArchived = currentTheme.archived === null || currentTheme.archived === undefined || currentTheme.archived === 0 ? 0 : 1;
     
-    // Toggle: if currently visible (0), make hidden (1). If hidden (1), make visible (0)
-    const newHidden = currentHidden === 0 ? 1 : 0;
-    
-    console.log(`[API] Toggle hidden for theme ${id}: ${currentHidden} -> ${newHidden}`);
+    // Toggle: if currently not archived (0), archive it (1). If archived (1), unarchive it (0)
+    const newArchived = currentArchived === 0 ? 1 : 0;
     
     const stmt = db.prepare(`
       UPDATE themes 
-      SET hidden = ?, updated_at = CURRENT_TIMESTAMP 
+      SET archived = ?, updated_at = CURRENT_TIMESTAMP 
       WHERE id = ?
     `);
-    const result = await stmt.run(newHidden, id);
+    await stmt.run(newArchived, id);
     
-    console.log(`[API] Update result:`, result);
-    
-    // Get updated theme to verify
+    // Get updated theme
     const updatedTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
     
-    console.log(`[API] Updated theme hidden value:`, updatedTheme.hidden, typeof updatedTheme.hidden);
-    
-    // Ensure hidden is returned as integer
-    updatedTheme.hidden = updatedTheme.hidden === null || updatedTheme.hidden === undefined ? 0 : parseInt(updatedTheme.hidden) || 0;
+    // Ensure archived is returned as integer
+    updatedTheme.archived = updatedTheme.archived === null || updatedTheme.archived === undefined ? 0 : parseInt(updatedTheme.archived) || 0;
     
     res.json(updatedTheme);
   } catch (error) {
-    console.error('[API] Toggle hidden error:', error);
-    res.status(500).json({ error: 'Failed to toggle theme visibility' });
+    console.error('[API] Toggle archived error:', error);
+    res.status(500).json({ error: 'Failed to toggle theme archive status' });
   }
 });
 

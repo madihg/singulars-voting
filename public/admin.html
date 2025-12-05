@@ -54,12 +54,12 @@
             color: #000000;
         }
         
-        .admin-btn.hide {
+        .admin-btn.archive {
             background: #ffffff;
             color: #000000;
         }
         
-        .admin-btn.hide:hover {
+        .admin-btn.archive:hover {
             background: #000000;
             color: #ffffff;
         }
@@ -237,29 +237,31 @@
         <div class="themes-section">
             <div class="section-header">
                 <h2>Active Themes</h2>
-                <label class="checkbox-container" style="margin-left: auto;" title="Filter out completed themes from this view">
-                    <input 
-                        type="checkbox" 
-                        id="filterCompletedCheckbox"
-                    >
-                    <span class="checkbox-label">Hide Completed</span>
-                </label>
             </div>
             
-            <div id="adminThemesList" class="themes-list">
+            <div id="activeThemesList" class="themes-list">
                 <div class="empty-state">
-                    <p>No themes yet.</p>
+                    <p>No active themes yet.</p>
                 </div>
             </div>
         </div>
 
-        <div class="themes-section" id="hiddenSection" style="display: none; margin-top: 2rem; border-top: 2px solid #000000; padding-top: 1.5rem;">
+        <div class="themes-section" id="completedSection" style="display: none; margin-top: 2rem; border-top: 1px solid #000000; padding-top: 1.5rem;">
             <div class="section-header">
-                <h2>Hidden Themes</h2>
+                <h2>Completed Themes</h2>
+            </div>
+            
+            <div id="completedThemesList" class="themes-list">
+            </div>
+        </div>
+
+        <div class="themes-section" id="archivedSection" style="display: none; margin-top: 2rem; border-top: 1px solid #000000; padding-top: 1.5rem;">
+            <div class="section-header">
+                <h2>Archived Themes</h2>
                 <span style="font-size: 0.875rem; color: #666;">(Not visible to users)</span>
             </div>
             
-            <div id="hiddenThemesList" class="themes-list">
+            <div id="archivedThemesList" class="themes-list">
             </div>
         </div>
     </div>
@@ -267,4 +269,5 @@
     <script src="admin.js"></script>
 </body>
 </html>
+
 

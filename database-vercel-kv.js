@@ -78,7 +78,7 @@ const kvDb = {
           content,
           votes: 0,
           completed: 0,
-          hidden: 0,
+          archived: 0,
           created_at: now,
           updated_at: now
         });
@@ -186,15 +186,16 @@ kvDb.prepare = function(sql) {
             const theme = await kv.hgetall(`theme:${id}`);
             if (!theme || !theme.content) return null;
             
-            // Normalize hidden value
-            const hiddenValue = theme.hidden === null || theme.hidden === undefined ? 0 : (parseInt(theme.hidden) || 0);
+            // Normalize archived value (migrate from hidden if needed)
+            let archivedValue = theme.archived !== undefined ? theme.archived : (theme.hidden !== undefined ? theme.hidden : 0);
+            archivedValue = archivedValue === null || archivedValue === undefined ? 0 : (parseInt(archivedValue) || 0);
             
             return {
               id: parseInt(id),
               content: theme.content,
               votes: parseInt(theme.votes) || 0,
               completed: parseInt(theme.completed) || 0,
-              hidden: hiddenValue,
+              archived: archivedValue,
               created_at: theme.created_at,
               updated_at: theme.updated_at
             };
@@ -341,9 +342,9 @@ kvDb.prepare = function(sql) {
         return { changes: 1 };
       }
       
-      // UPDATE hidden status
-      if (sql.includes('UPDATE themes') && sql.includes('SET hidden = ?')) {
-        const hidden = params[0];
+      // UPDATE archived status
+      if (sql.includes('UPDATE themes') && sql.includes('SET archived = ?')) {
+        const archived = params[0];
         const id = params[1];
         const theme = await kv.hgetall(`theme:${id}`);
         
@@ -355,7 +356,7 @@ kvDb.prepare = function(sql) {
         
         await kv.hset(`theme:${id}`, {
           ...theme,
-          hidden,
+          archived,
           updated_at: now
         });
         

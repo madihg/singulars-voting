@@ -16,16 +16,22 @@ async function initializeTable() {
         content TEXT NOT NULL UNIQUE,
         votes INTEGER DEFAULT 0,
         completed INTEGER DEFAULT 0,
-        hidden INTEGER DEFAULT 0,
+        archived INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
     
-    // Add hidden column if it doesn't exist (migration)
+    // Migrate hidden to archived if hidden column exists
     try {
-      await sql`ALTER TABLE themes ADD COLUMN hidden INTEGER DEFAULT 0`;
-      console.log('✓ Added hidden column to themes table');
+      await sql`ALTER TABLE themes ADD COLUMN archived INTEGER DEFAULT 0`;
+      // Copy hidden values to archived if hidden column exists
+      try {
+        await sql`UPDATE themes SET archived = hidden WHERE hidden IS NOT NULL`;
+      } catch (e) {
+        // hidden column doesn't exist, that's fine
+      }
+      console.log('✓ Added archived column to themes table');
     } catch (error) {
       // Column already exists, ignore error
     }
