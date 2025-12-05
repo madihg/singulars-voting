@@ -148,7 +148,7 @@ function renderThemeCard(theme) {
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
-                    <button class="admin-btn ${theme.hidden ? 'edit' : ''}" onclick="window.toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}">
+                    <button class="admin-btn ${theme.hidden ? 'show' : 'hide'}" onclick="window.toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}" data-theme-id="${theme.id}" data-is-hidden="${theme.hidden ? '1' : '0'}">
                         ${theme.hidden ? 'Show' : 'Hide'}
                     </button>
                     <button class="admin-btn edit" onclick="window.startEdit(${theme.id})">Edit</button>
@@ -273,23 +273,34 @@ async function saveEdit(id) {
 async function toggleHidden(id) {
     try {
         console.log('=== TOGGLE HIDDEN CALLED ===');
-        console.log('Theme ID:', id);
+        console.log('Theme ID:', id, 'Type:', typeof id);
         console.log('Admin token:', adminToken);
+        
+        // Find the theme before toggle
+        const themeBefore = themes.find(t => t.id === id);
+        console.log('Theme before toggle:', themeBefore);
+        console.log('Current hidden value:', themeBefore?.hidden, 'Type:', typeof themeBefore?.hidden);
         
         const response = await fetch(`/api/admin/themes/${id}/toggle-hidden`, {
             method: 'PATCH',
             headers: {
                 'X-Admin-Token': adminToken,
+                'Content-Type': 'application/json',
             },
         });
         
         console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Response data:', data);
+        console.log('Response ok:', response.ok);
         
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to toggle visibility');
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error('API Error:', errorData);
+            throw new Error(errorData.error || 'Failed to toggle visibility');
         }
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        console.log('Response hidden value:', data.hidden, 'Type:', typeof data.hidden);
         
         // Normalize hidden value (handle null, undefined, string "0"/"1", etc.)
         const normalizedHidden = data.hidden === null || data.hidden === undefined ? 0 : (parseInt(data.hidden) || 0);
@@ -303,10 +314,13 @@ async function toggleHidden(id) {
         
         if (index !== -1) {
             const oldHidden = themes[index].hidden;
-            themes[index] = data;
+            themes[index] = { ...themes[index], ...data, hidden: normalizedHidden };
             console.log('Theme updated from hidden=' + oldHidden + ' to hidden=' + themes[index].hidden);
+        } else {
+            console.error('Theme not found in local state!');
         }
         
+        // Force re-render
         renderThemes();
         updateStats();
         
@@ -317,7 +331,8 @@ async function toggleHidden(id) {
         
     } catch (error) {
         console.error('Toggle hidden error:', error);
-        showMessage(error.message, 'error');
+        console.error('Error stack:', error.stack);
+        showMessage(error.message || 'Failed to toggle visibility', 'error');
         // Revert on error
         renderThemes();
     }
