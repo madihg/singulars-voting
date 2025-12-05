@@ -191,19 +191,34 @@ app.patch('/api/admin/themes/:id/toggle-hidden', requireAdmin, async (req, res) 
       return res.status(404).json({ error: 'Theme not found' });
     }
     
-    // Toggle hidden status (0 -> 1, 1 -> 0)
-    const newHidden = currentTheme.hidden ? 0 : 1;
+    // Handle null/undefined/0 as visible (0), anything else as hidden (1)
+    const currentHidden = currentTheme.hidden === null || currentTheme.hidden === undefined || currentTheme.hidden === 0 ? 0 : 1;
+    
+    // Toggle: if currently visible (0), make hidden (1). If hidden (1), make visible (0)
+    const newHidden = currentHidden === 0 ? 1 : 0;
+    
+    console.log(`[API] Toggle hidden for theme ${id}: ${currentHidden} -> ${newHidden}`);
     
     const stmt = db.prepare(`
       UPDATE themes 
       SET hidden = ?, updated_at = CURRENT_TIMESTAMP 
       WHERE id = ?
     `);
-    await stmt.run(newHidden, id);
+    const result = await stmt.run(newHidden, id);
     
+    console.log(`[API] Update result:`, result);
+    
+    // Get updated theme to verify
     const updatedTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
+    
+    console.log(`[API] Updated theme hidden value:`, updatedTheme.hidden, typeof updatedTheme.hidden);
+    
+    // Ensure hidden is returned as integer
+    updatedTheme.hidden = updatedTheme.hidden === null || updatedTheme.hidden === undefined ? 0 : parseInt(updatedTheme.hidden) || 0;
+    
     res.json(updatedTheme);
   } catch (error) {
+    console.error('[API] Toggle hidden error:', error);
     res.status(500).json({ error: 'Failed to toggle theme visibility' });
   }
 });

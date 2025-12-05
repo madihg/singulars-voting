@@ -291,6 +291,12 @@ async function toggleHidden(id) {
             throw new Error(data.error || 'Failed to toggle visibility');
         }
         
+        // Normalize hidden value (handle null, undefined, string "0"/"1", etc.)
+        const normalizedHidden = data.hidden === null || data.hidden === undefined ? 0 : (parseInt(data.hidden) || 0);
+        data.hidden = normalizedHidden;
+        
+        console.log('Normalized hidden value:', normalizedHidden, 'Type:', typeof normalizedHidden);
+        
         // Update local state
         const index = themes.findIndex(t => t.id === id);
         console.log('Theme index in array:', index);
@@ -303,7 +309,11 @@ async function toggleHidden(id) {
         
         renderThemes();
         updateStats();
-        showMessage(data.hidden ? 'Theme hidden from users' : 'Theme visible to users', 'success');
+        
+        // Show correct message based on normalized value
+        const isHidden = normalizedHidden === 1;
+        console.log('Is hidden?', isHidden, 'Value:', normalizedHidden);
+        showMessage(isHidden ? 'Theme hidden from users' : 'Theme visible to users', 'success');
         
     } catch (error) {
         console.error('Toggle hidden error:', error);
