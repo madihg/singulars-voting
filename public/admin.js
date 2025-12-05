@@ -36,6 +36,18 @@ function setupEventListeners() {
     adminThemeForm.addEventListener('submit', handleAdminSubmit);
     adminThemeInput.addEventListener('input', updateCharCount);
     filterCompletedCheckbox.addEventListener('change', handleFilterChange);
+    
+    // Add event delegation for hide/show buttons as backup
+    document.addEventListener('click', (e) => {
+        const hideBtn = e.target.closest('.admin-btn.hide, .admin-btn.show');
+        if (hideBtn && hideBtn.dataset.themeId) {
+            e.preventDefault();
+            e.stopPropagation();
+            const themeId = parseInt(hideBtn.dataset.themeId);
+            console.log('Hide button clicked via event delegation, theme ID:', themeId);
+            toggleHidden(themeId);
+        }
+    });
 }
 
 // Update character count
