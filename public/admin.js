@@ -21,7 +21,7 @@ const adminCharCount = document.getElementById('adminCharCount');
 const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
-const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
+const filterCompletedCheckbox = document.getElementById('filterCompletedCheckbox');
 const hiddenSection = document.getElementById('hiddenSection');
 const hiddenThemesList = document.getElementById('hiddenThemesList');
 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     adminThemeForm.addEventListener('submit', handleAdminSubmit);
     adminThemeInput.addEventListener('input', updateCharCount);
-    toggleCompletedBtn.addEventListener('click', toggleCompletedVisibility);
+    filterCompletedCheckbox.addEventListener('change', handleFilterChange);
 }
 
 // Update character count
@@ -72,18 +72,22 @@ function updateStats() {
     totalVotesEl.textContent = themes.reduce((sum, theme) => sum + theme.votes, 0);
 }
 
-// Toggle completed themes visibility
-function toggleCompletedVisibility() {
-    hideCompleted = !hideCompleted;
-    toggleCompletedBtn.textContent = hideCompleted ? 'Show Completed' : 'Hide Completed';
+// Handle filter change
+function handleFilterChange() {
+    hideCompleted = filterCompletedCheckbox.checked;
+    console.log('Filter completed checkbox changed:', hideCompleted);
     renderThemes();
 }
 
 // Render themes
 function renderThemes() {
-    // Separate themes into visible and hidden
-    const visibleThemes = themes.filter(t => !t.hidden);
-    const hiddenThemes = themes.filter(t => t.hidden);
+    console.log('Rendering themes. Total themes:', themes.length);
+    
+    // Separate themes into visible and hidden (check for both 0 and falsy values)
+    const visibleThemes = themes.filter(t => !t.hidden || t.hidden === 0);
+    const hiddenThemes = themes.filter(t => t.hidden && t.hidden !== 0);
+    
+    console.log('Visible themes:', visibleThemes.length, 'Hidden themes:', hiddenThemes.length);
     
     // Further filter visible themes based on hideCompleted state
     const displayThemes = hideCompleted ? visibleThemes.filter(t => !t.completed) : visibleThemes;
@@ -144,7 +148,7 @@ function renderThemeCard(theme) {
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
-                    <button class="admin-btn ${theme.hidden ? 'edit' : ''}" onclick="toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}">
+                    <button class="admin-btn ${theme.hidden ? 'edit' : ''}" onclick="window.toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}">
                         ${theme.hidden ? 'Show' : 'Hide'}
                     </button>
                     <button class="admin-btn edit" onclick="startEdit(${theme.id})">Edit</button>
@@ -268,7 +272,10 @@ async function saveEdit(id) {
 // Toggle theme hidden status
 async function toggleHidden(id) {
     try {
-        console.log('Toggling hidden for theme:', id);
+        console.log('=== TOGGLE HIDDEN CALLED ===');
+        console.log('Theme ID:', id);
+        console.log('Admin token:', adminToken);
+        
         const response = await fetch(`/api/admin/themes/${id}/toggle-hidden`, {
             method: 'PATCH',
             headers: {
@@ -276,8 +283,9 @@ async function toggleHidden(id) {
             },
         });
         
+        console.log('Response status:', response.status);
         const data = await response.json();
-        console.log('Toggle hidden response:', data);
+        console.log('Response data:', data);
         
         if (!response.ok) {
             throw new Error(data.error || 'Failed to toggle visibility');
@@ -285,9 +293,12 @@ async function toggleHidden(id) {
         
         // Update local state
         const index = themes.findIndex(t => t.id === id);
+        console.log('Theme index in array:', index);
+        
         if (index !== -1) {
+            const oldHidden = themes[index].hidden;
             themes[index] = data;
-            console.log('Updated theme in local state:', themes[index]);
+            console.log('Theme updated from hidden=' + oldHidden + ' to hidden=' + themes[index].hidden);
         }
         
         renderThemes();
@@ -301,6 +312,9 @@ async function toggleHidden(id) {
         renderThemes();
     }
 }
+
+// Make toggleHidden available globally
+window.toggleHidden = toggleHidden;
 
 // Toggle theme completed status
 async function toggleComplete(id) {

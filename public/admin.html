@@ -217,9 +217,13 @@
         <div class="themes-section">
             <div class="section-header">
                 <h2>Active Themes</h2>
-                <button id="toggleCompletedBtn" class="admin-btn" style="margin-left: auto;">
-                    Hide Completed
-                </button>
+                <label class="checkbox-container" style="margin-left: auto;" title="Filter out completed themes from this view">
+                    <input 
+                        type="checkbox" 
+                        id="filterCompletedCheckbox"
+                    >
+                    <span class="checkbox-label">Hide Completed</span>
+                </label>
             </div>
             
             <div id="adminThemesList" class="themes-list">
