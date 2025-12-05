@@ -18,14 +18,12 @@ const adminThemeForm = document.getElementById('adminThemeForm');
 const adminThemeInput = document.getElementById('adminThemeInput');
 const activeThemesList = document.getElementById('activeThemesList');
 const completedThemesList = document.getElementById('completedThemesList');
-const archivedThemesList = document.getElementById('archivedThemesList');
 const adminCharCount = document.getElementById('adminCharCount');
 const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
 const completedSection = document.getElementById('completedSection');
 const completedHeader = document.getElementById('completedHeader');
-const archivedSection = document.getElementById('archivedSection');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,10 +95,9 @@ function updateStats() {
 
 // Render themes
 function renderThemes() {
-    // Separate themes into three categories
-    const activeThemes = themes.filter(t => !t.archived && !t.completed);
-    const completedThemes = themes.filter(t => !t.archived && t.completed);
-    const archivedThemes = themes.filter(t => t.archived);
+    // Separate themes into two categories (ignore archived)
+    const activeThemes = themes.filter(t => !t.completed);
+    const completedThemes = themes.filter(t => t.completed);
     
     // Render active themes
     if (activeThemes.length === 0) {
@@ -119,14 +116,6 @@ function renderThemes() {
     } else {
         completedSection.style.display = 'block';
         completedThemesList.innerHTML = completedThemes.map(theme => renderThemeCard(theme)).join('');
-    }
-    
-    // Render archived themes section
-    if (archivedThemes.length === 0) {
-        archivedSection.style.display = 'none';
-    } else {
-        archivedSection.style.display = 'block';
-        archivedThemesList.innerHTML = archivedThemes.map(theme => renderThemeCard(theme)).join('');
     }
 }
 
@@ -166,9 +155,6 @@ function renderThemeCard(theme) {
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
-                    <button class="admin-btn ${theme.archived ? 'show' : 'archive'}" onclick="window.toggleArchived(${theme.id})" title="${theme.archived ? 'Unarchive theme' : 'Archive theme'}" data-theme-id="${theme.id}">
-                        ${theme.archived ? 'Unarchive' : 'Archive'}
-                    </button>
                     <button class="admin-btn edit" onclick="window.startEdit(${theme.id})">Edit</button>
                     <button class="admin-btn delete" onclick="window.deleteTheme(${theme.id})">Delete</button>
                 </div>
@@ -287,59 +273,8 @@ async function saveEdit(id) {
     }
 }
 
-// Toggle theme archived status
-async function toggleArchived(id) {
-    try {
-        // Get current state before toggle
-        const themeBefore = themes.find(t => t.id === id);
-        const wasArchived = themeBefore && (themeBefore.archived === 1 || themeBefore.archived === '1' || themeBefore.archived === true);
-        
-        const response = await fetch(`/api/admin/themes/${id}/toggle-archived`, {
-            method: 'PATCH',
-            headers: {
-                'X-Admin-Token': adminToken,
-            },
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to toggle archive status');
-        }
-        
-        const data = await response.json();
-        
-        // Normalize archived value - be very explicit
-        let normalizedArchived = 0;
-        if (data.archived === 1 || data.archived === '1' || data.archived === true) {
-            normalizedArchived = 1;
-        } else if (data.archived === 0 || data.archived === '0' || data.archived === false || data.archived === null || data.archived === undefined) {
-            normalizedArchived = 0;
-        } else {
-            normalizedArchived = parseInt(data.archived) || 0;
-        }
-        
-        data.archived = normalizedArchived;
-        
-        // Update local state
-        const index = themes.findIndex(t => t.id === id);
-        if (index !== -1) {
-            themes[index] = { ...themes[index], ...data, archived: normalizedArchived };
-        }
-        
-        renderThemes();
-        updateStats();
-        
-        // Show message based on the NEW state (after toggle)
-        showMessage(normalizedArchived === 1 ? 'Theme archived' : 'Theme unarchived', 'success');
-        
-    } catch (error) {
-        showMessage(error.message || 'Failed to toggle archive status', 'error');
-        renderThemes();
-    }
-}
 
 // Make functions available globally for inline onclick handlers
-window.toggleArchived = toggleArchived;
 window.toggleComplete = toggleComplete;
 window.startEdit = startEdit;
 window.cancelEdit = cancelEdit;
