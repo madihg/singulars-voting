@@ -8,6 +8,10 @@ const kvDb = {
     all: async () => {
       // Get all themes
       if (sql.includes('SELECT') && sql.includes('ORDER BY votes')) {
+        // Check if we need to filter archived themes
+        const filterArchived = sql.includes('WHERE archived = 0') || sql.includes('WHERE archived IS NULL') || sql.includes('archived = 0 OR archived IS NULL');
+        const isAdmin = !filterArchived; // If no WHERE clause for archived, it's admin
+        
         // Get all theme IDs sorted by votes
         const themeIds = await kv.zrange('themes:by_votes', 0, -1, { rev: true });
         
@@ -16,18 +20,34 @@ const kvDb = {
         }
         
         // Get full theme data for each ID
-        const themes = await Promise.all(
+        const allThemes = await Promise.all(
           themeIds.map(async (id) => {
             const theme = await kv.hgetall(`theme:${id}`);
+            if (!theme || !theme.content) return null;
+            
+            // Normalize archived value (migrate from hidden if needed)
+            let archivedValue = theme.archived !== undefined ? theme.archived : (theme.hidden !== undefined ? theme.hidden : 0);
+            archivedValue = archivedValue === null || archivedValue === undefined ? 0 : (parseInt(archivedValue) || 0);
+            
             return {
               id: parseInt(id),
               content: theme.content,
               votes: parseInt(theme.votes) || 0,
+              completed: parseInt(theme.completed) || 0,
+              archived: archivedValue,
               created_at: theme.created_at,
               updated_at: theme.updated_at
             };
           })
         );
+        
+        // Filter out nulls and archived themes for regular users
+        let themes = allThemes.filter(t => t !== null);
+        
+        if (!isAdmin) {
+          // For regular users, exclude archived themes
+          themes = themes.filter(t => !t.archived || t.archived === 0);
+        }
         
         return themes;
       }
