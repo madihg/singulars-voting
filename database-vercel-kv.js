@@ -78,6 +78,7 @@ const kvDb = {
           content,
           votes: 0,
           completed: 0,
+          hidden: 0,
           created_at: now,
           updated_at: now
         });
@@ -189,6 +190,7 @@ kvDb.prepare = function(sql) {
               content: theme.content,
               votes: parseInt(theme.votes) || 0,
               completed: parseInt(theme.completed) || 0,
+              hidden: parseInt(theme.hidden) || 0,
               created_at: theme.created_at,
               updated_at: theme.updated_at
             };
@@ -212,6 +214,7 @@ kvDb.prepare = function(sql) {
         content: theme.content,
         votes: parseInt(theme.votes) || 0,
         completed: parseInt(theme.completed) || 0,
+        hidden: parseInt(theme.hidden) || 0,
         created_at: theme.created_at,
         updated_at: theme.updated_at
       };
@@ -325,6 +328,27 @@ kvDb.prepare = function(sql) {
         await kv.hset(`theme:${id}`, {
           ...theme,
           completed,
+          updated_at: now
+        });
+        
+        return { changes: 1 };
+      }
+      
+      // UPDATE hidden status
+      if (sql.includes('UPDATE themes') && sql.includes('SET hidden = ?')) {
+        const hidden = params[0];
+        const id = params[1];
+        const theme = await kv.hgetall(`theme:${id}`);
+        
+        if (!theme || !theme.content) {
+          return { changes: 0 };
+        }
+        
+        const now = new Date().toISOString();
+        
+        await kv.hset(`theme:${id}`, {
+          ...theme,
+          hidden,
           updated_at: now
         });
         

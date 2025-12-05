@@ -112,10 +112,19 @@ function renderThemes() {
 
 // Toggle completed section
 function toggleCompletedSection() {
-    completedCollapsed = !completedCollapsed;
-    completedThemesList.classList.toggle('collapsed', completedCollapsed);
     const icon = completedHeader.querySelector('.toggle-icon');
-    icon.textContent = completedCollapsed ? '▶' : '▼';
+    
+    if (completedCollapsed) {
+        // Currently collapsed, so expand it
+        completedCollapsed = false;
+        completedThemesList.classList.remove('collapsed');
+        icon.textContent = '▼'; // Down arrow when open
+    } else {
+        // Currently expanded, so collapse it
+        completedCollapsed = true;
+        completedThemesList.classList.add('collapsed');
+        icon.textContent = '▶'; // Right arrow when closed
+    }
 }
 
 // Handle form submission
