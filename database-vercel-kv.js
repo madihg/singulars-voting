@@ -214,15 +214,16 @@ kvDb.prepare = function(sql) {
       const theme = await kv.hgetall(`theme:${id}`);
       if (!theme || !theme.content) return null;
       
-      // Normalize hidden value - handle null, undefined, string "0"/"1"
-      const hiddenValue = theme.hidden === null || theme.hidden === undefined ? 0 : (parseInt(theme.hidden) || 0);
+      // Normalize archived value (migrate from hidden if needed)
+      let archivedValue = theme.archived !== undefined ? theme.archived : (theme.hidden !== undefined ? theme.hidden : 0);
+      archivedValue = archivedValue === null || archivedValue === undefined ? 0 : (parseInt(archivedValue) || 0);
       
       return {
         id: parseInt(id),
         content: theme.content,
         votes: parseInt(theme.votes) || 0,
         completed: parseInt(theme.completed) || 0,
-        hidden: hiddenValue,
+        archived: archivedValue,
         created_at: theme.created_at,
         updated_at: theme.updated_at
       };
