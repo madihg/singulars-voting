@@ -125,8 +125,8 @@ function renderThemeCard(theme) {
                         maxlength="50"
                         autofocus
                     >
-                    <button class="save" onclick="saveEdit(${theme.id})">Save</button>
-                    <button class="cancel" onclick="cancelEdit()">Cancel</button>
+                    <button class="save" onclick="window.saveEdit(${theme.id})">Save</button>
+                    <button class="cancel" onclick="window.cancelEdit()">Cancel</button>
                 </div>
             ` : `
                 <div class="theme-content">
@@ -144,15 +144,15 @@ function renderThemeCard(theme) {
                         <input 
                             type="checkbox" 
                             ${theme.completed ? 'checked' : ''} 
-                            onchange="toggleComplete(${theme.id})"
+                            onchange="window.toggleComplete(${theme.id})"
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
                     <button class="admin-btn ${theme.hidden ? 'edit' : ''}" onclick="window.toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}">
                         ${theme.hidden ? 'Show' : 'Hide'}
                     </button>
-                    <button class="admin-btn edit" onclick="startEdit(${theme.id})">Edit</button>
-                    <button class="admin-btn delete" onclick="deleteTheme(${theme.id})">Delete</button>
+                    <button class="admin-btn edit" onclick="window.startEdit(${theme.id})">Edit</button>
+                    <button class="admin-btn delete" onclick="window.deleteTheme(${theme.id})">Delete</button>
                 </div>
             `}
         </div>
@@ -313,8 +313,13 @@ async function toggleHidden(id) {
     }
 }
 
-// Make toggleHidden available globally
+// Make functions available globally for inline onclick handlers
 window.toggleHidden = toggleHidden;
+window.toggleComplete = toggleComplete;
+window.startEdit = startEdit;
+window.cancelEdit = cancelEdit;
+window.saveEdit = saveEdit;
+window.deleteTheme = deleteTheme;
 
 // Toggle theme completed status
 async function toggleComplete(id) {
