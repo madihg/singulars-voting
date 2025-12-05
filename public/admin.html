@@ -79,6 +79,23 @@
             cursor: not-allowed;
         }
         
+        .section-header.collapsible {
+            user-select: none;
+        }
+        
+        .section-header.collapsible:hover {
+            background: #f5f5f5;
+        }
+        
+        .toggle-icon {
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .themes-list.collapsed {
+            display: none;
+        }
+        
         .theme-card {
             display: flex;
             align-items: center;
@@ -247,11 +264,12 @@
         </div>
 
         <div class="themes-section" id="completedSection" style="display: none; margin-top: 2rem; border-top: 1px solid #000000; padding-top: 1.5rem;">
-            <div class="section-header">
+            <div class="section-header collapsible" id="completedHeader" style="cursor: pointer;">
                 <h2>Completed Themes</h2>
+                <span class="toggle-icon">▶</span>
             </div>
             
-            <div id="completedThemesList" class="themes-list">
+            <div id="completedThemesList" class="themes-list collapsed">
             </div>
         </div>
 

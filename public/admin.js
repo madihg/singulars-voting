@@ -11,6 +11,7 @@ if (adminToken === 'admin.html' || !adminToken || adminToken === 'admin') {
 // State management
 let themes = [];
 let editingId = null;
+let completedCollapsed = true;
 
 // DOM elements
 const adminThemeForm = document.getElementById('adminThemeForm');
@@ -23,6 +24,7 @@ const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
 const completedSection = document.getElementById('completedSection');
+const completedHeader = document.getElementById('completedHeader');
 const archivedSection = document.getElementById('archivedSection');
 
 // Initialize
@@ -35,6 +37,28 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     adminThemeForm.addEventListener('submit', handleAdminSubmit);
     adminThemeInput.addEventListener('input', updateCharCount);
+    if (completedHeader) {
+        completedHeader.addEventListener('click', toggleCompletedSection);
+    }
+}
+
+// Toggle completed section
+function toggleCompletedSection() {
+    if (!completedHeader || !completedThemesList) return;
+    
+    const icon = completedHeader.querySelector('.toggle-icon');
+    
+    if (completedCollapsed) {
+        // Currently collapsed, so expand it
+        completedCollapsed = false;
+        completedThemesList.classList.remove('collapsed');
+        icon.textContent = '▼'; // Down arrow when open
+    } else {
+        // Currently expanded, so collapse it
+        completedCollapsed = true;
+        completedThemesList.classList.add('collapsed');
+        icon.textContent = '▶'; // Right arrow when closed
+    }
 }
 
 // Update character count
@@ -266,6 +290,10 @@ async function saveEdit(id) {
 // Toggle theme archived status
 async function toggleArchived(id) {
     try {
+        // Get current state before toggle
+        const themeBefore = themes.find(t => t.id === id);
+        const wasArchived = themeBefore && (themeBefore.archived === 1 || themeBefore.archived === '1' || themeBefore.archived === true);
+        
         const response = await fetch(`/api/admin/themes/${id}/toggle-archived`, {
             method: 'PATCH',
             headers: {
@@ -280,8 +308,16 @@ async function toggleArchived(id) {
         
         const data = await response.json();
         
-        // Normalize archived value
-        const normalizedArchived = data.archived === null || data.archived === undefined ? 0 : (parseInt(data.archived) || 0);
+        // Normalize archived value - be very explicit
+        let normalizedArchived = 0;
+        if (data.archived === 1 || data.archived === '1' || data.archived === true) {
+            normalizedArchived = 1;
+        } else if (data.archived === 0 || data.archived === '0' || data.archived === false || data.archived === null || data.archived === undefined) {
+            normalizedArchived = 0;
+        } else {
+            normalizedArchived = parseInt(data.archived) || 0;
+        }
+        
         data.archived = normalizedArchived;
         
         // Update local state
@@ -293,8 +329,8 @@ async function toggleArchived(id) {
         renderThemes();
         updateStats();
         
-        const isArchived = normalizedArchived === 1;
-        showMessage(isArchived ? 'Theme archived' : 'Theme unarchived', 'success');
+        // Show message based on the NEW state (after toggle)
+        showMessage(normalizedArchived === 1 ? 'Theme archived' : 'Theme unarchived', 'success');
         
     } catch (error) {
         showMessage(error.message || 'Failed to toggle archive status', 'error');
