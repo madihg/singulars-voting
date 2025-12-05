@@ -46,7 +46,11 @@ function updateCharCount() {
 // Load themes from API
 async function loadThemes() {
     try {
-        const response = await fetch('/api/themes');
+        const response = await fetch('/api/themes', {
+            headers: {
+                'X-Admin-Token': adminToken,
+            },
+        });
         if (!response.ok) throw new Error('Failed to load themes');
         
         themes = await response.json();

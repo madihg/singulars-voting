@@ -115,7 +115,7 @@ function toggleCompletedSection() {
     completedCollapsed = !completedCollapsed;
     completedThemesList.classList.toggle('collapsed', completedCollapsed);
     const icon = completedHeader.querySelector('.toggle-icon');
-    icon.textContent = completedCollapsed ? '▼' : '▲';
+    icon.textContent = completedCollapsed ? '▶' : '▼';
 }
 
 // Handle form submission
