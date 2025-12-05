@@ -42,10 +42,19 @@ if (useEdgeConfig) {
           content TEXT NOT NULL UNIQUE,
           votes INTEGER DEFAULT 0,
           completed INTEGER DEFAULT 0,
+          hidden INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      
+      // Add hidden column if it doesn't exist (migration)
+      try {
+        await turso.execute(`ALTER TABLE themes ADD COLUMN hidden INTEGER DEFAULT 0`);
+        console.log('✓ Added hidden column to themes table');
+      } catch (error) {
+        // Column already exists, ignore error
+      }
       console.log('✓ Using Turso database (serverless)');
     } catch (error) {
       console.error('Turso initialization error:', error);
@@ -86,10 +95,22 @@ if (useEdgeConfig) {
         content TEXT NOT NULL UNIQUE,
         votes INTEGER DEFAULT 0,
         completed INTEGER DEFAULT 0,
+        hidden INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Add hidden column if it doesn't exist (migration)
+    try {
+      db.exec(`ALTER TABLE themes ADD COLUMN hidden INTEGER DEFAULT 0`);
+      console.log('✓ Added hidden column to themes table');
+    } catch (error) {
+      // Column already exists, ignore error
+      if (!error.message.includes('duplicate column name')) {
+        console.error('Migration warning:', error.message);
+      }
+    }
     
     console.log('✓ Using local SQLite database');
   } catch (error) {

@@ -1,6 +1,7 @@
 // State management
 let themes = [];
 let isSubmitting = false;
+let completedCollapsed = true;
 
 // DOM elements
 const themeForm = document.getElementById('themeForm');
@@ -9,6 +10,9 @@ const themesList = document.getElementById('themesList');
 const charCount = document.getElementById('charCount');
 const themeCount = document.getElementById('themeCount');
 const formMessage = document.getElementById('formMessage');
+const completedSection = document.getElementById('completedSection');
+const completedHeader = document.getElementById('completedHeader');
+const completedThemesList = document.getElementById('completedThemesList');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     themeForm.addEventListener('submit', handleSubmit);
     themeInput.addEventListener('input', updateCharCount);
+    completedHeader.addEventListener('click', toggleCompletedSection);
 }
 
 // Update character count
@@ -44,37 +49,73 @@ async function loadThemes() {
 
 // Render themes
 function renderThemes() {
+    // Separate incomplete and completed themes
+    const incompleteThemes = themes.filter(t => !t.completed);
+    const completedThemes = themes.filter(t => t.completed);
+    
     updateThemeCount();
     
-    if (themes.length === 0) {
+    // Render incomplete themes
+    if (incompleteThemes.length === 0) {
         themesList.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">📋</div>
                 <p>No themes yet. Be the first to add one!</p>
             </div>
         `;
-        return;
+    } else {
+        themesList.innerHTML = incompleteThemes.map(theme => `
+            <div class="theme-card" data-id="${theme.id}">
+                <div class="theme-content">
+                    <div class="theme-text">${escapeHtml(theme.content)}</div>
+                    <div class="theme-meta">
+                        <span class="theme-date">${formatDate(theme.created_at)}</span>
+                    </div>
+                </div>
+                <button 
+                    class="vote-btn" 
+                    onclick="handleVote(${theme.id})"
+                    aria-label="Upvote"
+                >
+                    <span class="vote-icon">▲</span>
+                    <span class="vote-count">${theme.votes}</span>
+                </button>
+            </div>
+        `).join('');
     }
     
-    themesList.innerHTML = themes.map(theme => `
-        <div class="theme-card ${theme.completed ? 'completed' : ''}" data-id="${theme.id}">
-            <div class="theme-content">
-                <div class="theme-text">${escapeHtml(theme.content)}${theme.completed ? ' <span class="done-badge">[DONE]</span>' : ''}</div>
-                <div class="theme-meta">
-                    <span class="theme-date">${formatDate(theme.created_at)}</span>
+    // Render completed themes section
+    if (completedThemes.length === 0) {
+        completedSection.style.display = 'none';
+    } else {
+        completedSection.style.display = 'block';
+        completedThemesList.innerHTML = completedThemes.map(theme => `
+            <div class="theme-card completed" data-id="${theme.id}">
+                <div class="theme-content">
+                    <div class="theme-text">${escapeHtml(theme.content)} <span class="done-badge">[DONE]</span></div>
+                    <div class="theme-meta">
+                        <span class="theme-date">${formatDate(theme.created_at)}</span>
+                    </div>
                 </div>
+                <button 
+                    class="vote-btn" 
+                    onclick="handleVote(${theme.id})"
+                    aria-label="Upvote"
+                    disabled
+                >
+                    <span class="vote-icon">▲</span>
+                    <span class="vote-count">${theme.votes}</span>
+                </button>
             </div>
-            <button 
-                class="vote-btn" 
-                onclick="handleVote(${theme.id})"
-                aria-label="Upvote"
-                ${theme.completed ? 'disabled' : ''}
-            >
-                <span class="vote-icon">▲</span>
-                <span class="vote-count">${theme.votes}</span>
-            </button>
-        </div>
-    `).join('');
+        `).join('');
+    }
+}
+
+// Toggle completed section
+function toggleCompletedSection() {
+    completedCollapsed = !completedCollapsed;
+    completedThemesList.classList.toggle('collapsed', completedCollapsed);
+    const icon = completedHeader.querySelector('.toggle-icon');
+    icon.textContent = completedCollapsed ? '▼' : '▲';
 }
 
 // Handle form submission
@@ -183,8 +224,8 @@ async function handleVote(id) {
 
 // Update theme count
 function updateThemeCount() {
-    const count = themes.length;
-    themeCount.textContent = `${count} ${count === 1 ? 'theme' : 'themes'}`;
+    const incompleteCount = themes.filter(t => !t.completed).length;
+    themeCount.textContent = `${incompleteCount} ${incompleteCount === 1 ? 'theme' : 'themes'}`;
 }
 
 // Show message

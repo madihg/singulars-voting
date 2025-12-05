@@ -118,6 +118,9 @@ function renderThemes() {
                         >
                         <span class="checkbox-label">Done</span>
                     </label>
+                    <button class="admin-btn ${theme.hidden ? 'edit' : ''}" onclick="toggleHidden(${theme.id})" title="${theme.hidden ? 'Show to users' : 'Hide from users'}">
+                        ${theme.hidden ? 'Show' : 'Hide'}
+                    </button>
                     <button class="admin-btn edit" onclick="startEdit(${theme.id})">Edit</button>
                     <button class="admin-btn delete" onclick="deleteTheme(${theme.id})">Delete</button>
                 </div>
@@ -233,6 +236,38 @@ async function saveEdit(id) {
         
     } catch (error) {
         showMessage(error.message, 'error');
+    }
+}
+
+// Toggle theme hidden status
+async function toggleHidden(id) {
+    try {
+        const response = await fetch(`/api/admin/themes/${id}/toggle-hidden`, {
+            method: 'PATCH',
+            headers: {
+                'X-Admin-Token': adminToken,
+            },
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to toggle visibility');
+        }
+        
+        // Update local state
+        const index = themes.findIndex(t => t.id === id);
+        if (index !== -1) {
+            themes[index] = data;
+        }
+        
+        renderThemes();
+        showMessage(data.hidden ? 'Theme hidden from users' : 'Theme visible to users', 'success');
+        
+    } catch (error) {
+        showMessage(error.message, 'error');
+        // Revert on error
+        renderThemes();
     }
 }
 

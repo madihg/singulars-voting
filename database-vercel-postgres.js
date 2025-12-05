@@ -16,10 +16,20 @@ async function initializeTable() {
         content TEXT NOT NULL UNIQUE,
         votes INTEGER DEFAULT 0,
         completed INTEGER DEFAULT 0,
+        hidden INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+    
+    // Add hidden column if it doesn't exist (migration)
+    try {
+      await sql`ALTER TABLE themes ADD COLUMN hidden INTEGER DEFAULT 0`;
+      console.log('✓ Added hidden column to themes table');
+    } catch (error) {
+      // Column already exists, ignore error
+    }
+    
     console.log('✓ Vercel Postgres table initialized');
     tableInitialized = true;
   } catch (error) {

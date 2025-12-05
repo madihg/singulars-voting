@@ -18,11 +18,19 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // Get all themes (sorted by votes, then by date)
 app.get('/api/themes', async (req, res) => {
   try {
-    const themes = await db.prepare(`
-      SELECT id, content, votes, completed, created_at, updated_at 
-      FROM themes 
-      ORDER BY votes DESC, created_at ASC
-    `).all();
+    const isAdmin = req.headers['x-admin-token'] === ADMIN_TOKEN;
+    
+    // For regular users, exclude hidden themes
+    const query = isAdmin 
+      ? `SELECT id, content, votes, completed, hidden, created_at, updated_at 
+         FROM themes 
+         ORDER BY votes DESC, created_at ASC`
+      : `SELECT id, content, votes, completed, hidden, created_at, updated_at 
+         FROM themes 
+         WHERE hidden = 0 OR hidden IS NULL
+         ORDER BY votes DESC, created_at ASC`;
+    
+    const themes = await db.prepare(query).all();
     res.json(themes);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch themes' });
@@ -168,6 +176,35 @@ app.patch('/api/admin/themes/:id/toggle-complete', requireAdmin, async (req, res
     res.json(updatedTheme);
   } catch (error) {
     res.status(500).json({ error: 'Failed to toggle theme completion' });
+  }
+});
+
+// Admin: Toggle theme hidden status
+app.patch('/api/admin/themes/:id/toggle-hidden', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get current theme
+    const currentTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
+    
+    if (!currentTheme) {
+      return res.status(404).json({ error: 'Theme not found' });
+    }
+    
+    // Toggle hidden status (0 -> 1, 1 -> 0)
+    const newHidden = currentTheme.hidden ? 0 : 1;
+    
+    const stmt = db.prepare(`
+      UPDATE themes 
+      SET hidden = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `);
+    await stmt.run(newHidden, id);
+    
+    const updatedTheme = await db.prepare('SELECT * FROM themes WHERE id = ?').get(id);
+    res.json(updatedTheme);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle theme visibility' });
   }
 });
 
