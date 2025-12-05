@@ -216,7 +216,7 @@
 
         <div class="themes-section">
             <div class="section-header">
-                <h2>All Themes</h2>
+                <h2>Active Themes</h2>
                 <button id="toggleCompletedBtn" class="admin-btn" style="margin-left: auto;">
                     Hide Completed
                 </button>
@@ -226,6 +226,16 @@
                 <div class="empty-state">
                     <p>No themes yet.</p>
                 </div>
+            </div>
+        </div>
+
+        <div class="themes-section" id="hiddenSection" style="display: none; margin-top: 2rem; border-top: 2px solid #000000; padding-top: 1.5rem;">
+            <div class="section-header">
+                <h2>Hidden Themes</h2>
+                <span style="font-size: 0.875rem; color: #666;">(Not visible to users)</span>
+            </div>
+            
+            <div id="hiddenThemesList" class="themes-list">
             </div>
         </div>
     </div>

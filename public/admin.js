@@ -22,6 +22,8 @@ const adminFormMessage = document.getElementById('adminFormMessage');
 const totalThemesEl = document.getElementById('totalThemes');
 const totalVotesEl = document.getElementById('totalVotes');
 const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
+const hiddenSection = document.getElementById('hiddenSection');
+const hiddenThemesList = document.getElementById('hiddenThemesList');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -54,9 +56,12 @@ async function loadThemes() {
         if (!response.ok) throw new Error('Failed to load themes');
         
         themes = await response.json();
+        console.log('Loaded themes:', themes);
+        console.log('Admin token:', adminToken);
         renderThemes();
         updateStats();
     } catch (error) {
+        console.error('Load themes error:', error);
         showMessage('Failed to load themes. Please refresh the page.', 'error');
     }
 }
@@ -76,19 +81,36 @@ function toggleCompletedVisibility() {
 
 // Render themes
 function renderThemes() {
-    // Filter themes based on hideCompleted state
-    const displayThemes = hideCompleted ? themes.filter(t => !t.completed) : themes;
+    // Separate themes into visible and hidden
+    const visibleThemes = themes.filter(t => !t.hidden);
+    const hiddenThemes = themes.filter(t => t.hidden);
     
+    // Further filter visible themes based on hideCompleted state
+    const displayThemes = hideCompleted ? visibleThemes.filter(t => !t.completed) : visibleThemes;
+    
+    // Render visible themes
     if (displayThemes.length === 0) {
         adminThemesList.innerHTML = `
             <div class="empty-state">
-                <p>${hideCompleted ? 'No incomplete themes.' : 'No themes yet.'}</p>
+                <p>${hideCompleted ? 'No incomplete themes.' : 'No visible themes yet.'}</p>
             </div>
         `;
-        return;
+    } else {
+        adminThemesList.innerHTML = displayThemes.map(theme => renderThemeCard(theme)).join('');
     }
     
-    adminThemesList.innerHTML = displayThemes.map(theme => `
+    // Render hidden themes section
+    if (hiddenThemes.length === 0) {
+        hiddenSection.style.display = 'none';
+    } else {
+        hiddenSection.style.display = 'block';
+        hiddenThemesList.innerHTML = hiddenThemes.map(theme => renderThemeCard(theme)).join('');
+    }
+}
+
+// Render a single theme card
+function renderThemeCard(theme) {
+    return `
         <div class="theme-card ${theme.completed ? 'completed' : ''}" data-id="${theme.id}">
             ${editingId === theme.id ? `
                 <div class="edit-form">
@@ -130,7 +152,7 @@ function renderThemes() {
                 </div>
             `}
         </div>
-    `).join('');
+    `;
 }
 
 // Handle form submission
@@ -246,6 +268,7 @@ async function saveEdit(id) {
 // Toggle theme hidden status
 async function toggleHidden(id) {
     try {
+        console.log('Toggling hidden for theme:', id);
         const response = await fetch(`/api/admin/themes/${id}/toggle-hidden`, {
             method: 'PATCH',
             headers: {
@@ -254,6 +277,7 @@ async function toggleHidden(id) {
         });
         
         const data = await response.json();
+        console.log('Toggle hidden response:', data);
         
         if (!response.ok) {
             throw new Error(data.error || 'Failed to toggle visibility');
@@ -263,12 +287,15 @@ async function toggleHidden(id) {
         const index = themes.findIndex(t => t.id === id);
         if (index !== -1) {
             themes[index] = data;
+            console.log('Updated theme in local state:', themes[index]);
         }
         
         renderThemes();
+        updateStats();
         showMessage(data.hidden ? 'Theme hidden from users' : 'Theme visible to users', 'success');
         
     } catch (error) {
+        console.error('Toggle hidden error:', error);
         showMessage(error.message, 'error');
         // Revert on error
         renderThemes();
